@@ -31,9 +31,34 @@ body:after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;back
 footer{margin-top:15px;border-top:2px solid #078cff;background:#020611;padding:19px;text-align:center;color:#c4e2ff;line-height:1.9}footer strong{color:var(--gold)}footer .signature{color:var(--cyan);font-weight:bold}.topbtn{position:fixed;bottom:15px;left:15px;z-index:60;width:43px;height:43px;display:grid;place-items:center;border-radius:50%;background:#007cff;border:1px solid #5be7ff;box-shadow:0 0 15px #008cff;color:white;font-size:22px}
 @media(max-width:1080px){.layout{grid-template-columns:200px minmax(0,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}.right .panel{height:fit-content}.quicklinks{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.layout{grid-template-columns:1fr}.left,.right{display:grid;grid-template-columns:1fr}.nav a{font-size:11px;padding:9px 8px}.hero{min-height:220px}.cards{grid-template-columns:1fr}.subject-grid{grid-template-columns:1fr}.calcgrid{grid-template-columns:1fr}.quicklinks{grid-template-columns:repeat(2,1fr)}.banner{min-height:210px}}
+
+/* visitor login + local visitor register */
+.login-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:#010611ed;backdrop-filter:blur(9px)}
+.login-card{width:min(460px,100%);background:linear-gradient(145deg,#071a35,#020817);border:1px solid #09aaff;border-radius:18px;padding:22px;box-shadow:0 0 32px #008cff55;text-align:center}
+.login-card h2{color:#ffe6a2;margin:5px 0 10px}.login-card p{color:#c8e2ff;line-height:1.8;font-size:13px}.login-card label{display:block;text-align:right;color:#dff3ff;margin:12px 0 5px;font-weight:bold;font-size:13px}.login-card input{width:100%;padding:12px;border:1px solid #168cff;border-radius:9px;background:#020b19;color:white;direction:rtl}.login-card .btn{width:100%;margin-top:14px;background:linear-gradient(120deg,#007aff,#00baff)}.login-error{color:#ff7d8a;min-height:22px;font-size:13px;margin-top:8px}
+.visitor-admin{position:fixed;bottom:68px;left:15px;z-index:70;background:#06172e;border:1px solid #08aaff;color:#e9f7ff;padding:10px 12px;border-radius:10px;font-weight:bold;box-shadow:0 0 14px #008cff44;cursor:pointer}
+.visitor-panel{position:fixed;inset:5%;z-index:9998;background:#020817;border:1px solid #08aaff;border-radius:15px;padding:16px;overflow:auto;box-shadow:0 0 30px #008cff55;display:none}.visitor-panel h2{color:#ffe6a2}.visitor-panel table{min-width:0;width:100%}.visitor-panel .actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.visitor-panel input{background:#06172e;color:white;border:1px solid #168cff;padding:9px;border-radius:8px}
+
 </style>
 </head>
 <body>
+
+<div class="login-overlay" id="visitorLogin" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+ <form class="login-card" id="visitorLoginForm">
+  <div class="crown">♛</div><h2 id="loginTitle">تسجيل دخول الطالب</h2>
+  <p>اكتب اسمك ورقم هاتفك للدخول إلى بوابة الثانوية العامة. سيتم حفظ بيانات التسجيل على هذا الجهاز لأغراض سجل الزوار.</p>
+  <label for="visitorName">الاسم بالكامل</label><input id="visitorName" name="name" autocomplete="name" maxlength="90" required placeholder="اكتب اسمك">
+  <label for="visitorPhone">رقم الهاتف</label><input id="visitorPhone" name="phone" autocomplete="tel" inputmode="tel" maxlength="15" required placeholder="01xxxxxxxxx">
+  <button class="btn primary" type="submit">دخول الموقع 🔐</button><div class="login-error" id="loginError" aria-live="polite"></div>
+ </form>
+</div>
+<button class="visitor-admin" id="visitorAdminButton" type="button" title="لوحة إدارة صاحب الموقع">🔐 سجل الزوار — الإدارة</button>
+<section class="visitor-panel" id="visitorAdminPanel" aria-label="سجل الزوار">
+ <h2>🔐 سجل دخول الزوار — خاص بصاحب الموقع</h2><p class="desc">لن يظهر السجل إلا بعد إدخال رمز الإدارة. البيانات محفوظة على هذا الجهاز والمتصفح فقط، وليست سجلًا مركزيًا على الإنترنت.</p>
+ <div class="actions"><input id="adminCode" type="password" placeholder="رمز الإدارة"><button class="btn primary" id="showVisitorRecords">عرض السجل</button><button class="btn" id="exportVisitorRecords">تنزيل CSV</button><button class="btn" id="closeVisitorPanel">إغلاق</button></div>
+ <div id="visitorRecordsContent" class="tablewrap"></div>
+</section>
+
 <div class="top"><span>🇪🇬 جمهورية مصر العربية</span><span class="slogan">⚡ بوابة طلاب الثانوية العامة • 2026 / 2027</span><span>🎓 معًا نحو التفوق</span></div>
 <header class="hero" id="home"><div class="container"><div class="crown">♛</div><h1>مدرسة العمدة السيد أحمد قطب</h1><div class="ribbon">بوابة الثانوية العامة • علمي وأدبي</div><p>دروس ومراجعات واختبارات وأدوات تساعدك في طريق النجاح</p></div></header>
 <nav class="nav"><div class="navin container">
@@ -103,6 +128,43 @@ filterSubjects("all",document.querySelector("#subjects .chip"));
 function gradeQuiz(){let answers={q1:"b",q2:"a",q3:"b"},score=0,total=Object.keys(answers).length;for(let q in answers){let pick=document.querySelector(`input[name="${q}"]:checked`);if(pick&&pick.value===answers[q])score++}document.getElementById("quizResult").textContent=`نتيجتك: ${score} من ${total} (${Math.round(score/total*100)}%). ${score===total?"ممتاز! إجاباتك صحيحة كلها.":"راجع الإجابات وحاول مرة أخرى."}`}
 function calc(){let s=Number(document.getElementById("score").value),m=Number(document.getElementById("maxscore").value);if(!m||m<1||s<0||s>m){document.getElementById("calcresult").textContent="من فضلك أدخل درجات صحيحة، والمجموع لا يتجاوز النهاية الكبرى.";document.getElementById("percent").value="";return}let p=s/m*100;document.getElementById("percent").value=p.toFixed(2)+"%";document.getElementById("calcresult").textContent="نسبة مجموعك المدخل: "+p.toFixed(2)+"%"}
 document.querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",()=>{document.querySelectorAll(".nav a").forEach(x=>x.classList.remove("active"));a.classList.add("active")}));
+</script>
+<script>
+// Login and visitor log: browser-local storage only (no central server).
+(function(){
+ const LOGIN_KEY='alomda_visitor_login_v1', LOG_KEY='alomda_visitor_records_v1';
+ const overlay=document.getElementById('visitorLogin'), form=document.getElementById('visitorLoginForm');
+ const active=sessionStorage.getItem(LOGIN_KEY);
+ if(active){overlay.style.display='none';}
+ form.addEventListener('submit',function(e){e.preventDefault();
+  const name=document.getElementById('visitorName').value.trim();
+  let phone=document.getElementById('visitorPhone').value.replace(/[\s()+-]/g,'');
+  const err=document.getElementById('loginError');
+  if(name.length<2){err.textContent='اكتب اسمًا صحيحًا من حرفين على الأقل.';return;}
+  if(!/^(01[0-2,5]\d{8}|201[0-2,5]\d{8})$/.test(phone)){err.textContent='رقم الهاتف المصري غير صحيح. اكتب رقمًا يبدأ بـ 01 ويتكون من 11 رقمًا.';return;}
+  if(phone.startsWith('20'))phone=phone.slice(2);
+  const record={name:name,phone:phone,enteredAt:new Date().toLocaleString('ar-EG')};
+  try{let records=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');if(!Array.isArray(records))records=[];records.push(record);localStorage.setItem(LOG_KEY,JSON.stringify(records));sessionStorage.setItem(LOGIN_KEY,JSON.stringify({name:name}));overlay.style.display='none';}
+  catch(ex){err.textContent='تعذر حفظ التسجيل في المتصفح. تأكد من تفعيل التخزين.';}
+ });
+ const panel=document.getElementById('visitorAdminPanel');
+ document.getElementById('visitorAdminButton').addEventListener('click',()=>{panel.style.display='block';});
+ document.getElementById('closeVisitorPanel').addEventListener('click',()=>{panel.style.display='none';document.getElementById('adminCode').value='';document.getElementById('visitorRecordsContent').innerHTML='';});
+ function records(){try{return JSON.parse(localStorage.getItem(LOG_KEY)||'[]')}catch(e){return []}}
+ document.getElementById('showVisitorRecords').addEventListener('click',()=>{
+  // This password gate is only a basic privacy barrier in a standalone HTML file; it is not server-side authentication.
+  if(document.getElementById('adminCode').value!=='OSCAR2026'){alert('رمز الإدارة غير صحيح');return;}
+  const list=records(), box=document.getElementById('visitorRecordsContent');
+  if(!list.length){box.innerHTML='<p class="desc">لا يوجد زوار مسجلون على هذا الجهاز حتى الآن.</p>';return;}
+  box.innerHTML='<table><thead><tr><th>#</th><th>الاسم</th><th>رقم الهاتف</th><th>وقت الدخول</th></tr></thead><tbody>'+list.map((r,i)=>'<tr><td>'+ (i+1)+'</td><td>'+escapeHTML(r.name)+'</td><td dir="ltr">'+escapeHTML(r.phone)+'</td><td>'+escapeHTML(r.enteredAt)+'</td></tr>').join('')+'</tbody></table><p class="desc">إجمالي التسجيلات: '+list.length+'</p>';
+ });
+ function escapeHTML(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ document.getElementById('exportVisitorRecords').addEventListener('click',()=>{
+  if(document.getElementById('adminCode').value!=='OSCAR2026'){alert('أدخل رمز الإدارة الصحيح أولًا');return;}
+  const list=records();const csv='الاسم,رقم الهاتف,وقت الدخول\r\n'+list.map(r=>[r.name,r.phone,r.enteredAt].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='visitor-register.csv';a.click();URL.revokeObjectURL(url);
+ });
+})();
 </script>
 </body>
 </html>
